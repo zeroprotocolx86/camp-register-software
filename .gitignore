@@ -1,0 +1,43 @@
+# Tauri / Rust
+src-tauri/target/
+src-tauri/Cargo.lock
+
+# Node
+node_modules/
+package-lock.json
+yarn.lock
+
+# Build outputs
+dist/
+build/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+npm-debug.log*
+
+# Environment
+.env
+.env.local
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.backup
+
+# Application data (user data should not be in repo)
+src-tauri/target/
+*.db
+*.sqlite

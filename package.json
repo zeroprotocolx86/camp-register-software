@@ -1,0 +1,12 @@
+{
+  "name": "camp_register_tauri",
+  "private": true,
+  "version": "1.1.0",
+  "type": "module",
+  "scripts": {
+    "tauri": "tauri"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.11.2"
+  }
+}

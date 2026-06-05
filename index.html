@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Реєстрація в табір</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="homePage" class="page active">
+    <div class="container centered">
+        <div class="welcome-card">
+            <h1 class="main-title">Реєстрація в табір</h1>
+
+            <div class="welcome-form">
+                <div class="form-group">
+                    <label for="homeVillage">Місце:</label>
+                    <input type="text" id="homeVillage" placeholder="Введіть назву місця">
+                </div>
+                <div class="form-group">
+                    <label for="homeDate">Дата:</label>
+                    <input type="date" id="homeDate">
+                </div>
+                <button class="btn btn-primary btn-large" onclick="startRegistration()">Почати реєстрацію</button>
+            </div>
+
+            <div class="home-actions">
+                <button class="btn btn-secondary btn-home" onclick="goToHistory()">Історія</button>
+                <button class="btn btn-secondary btn-home" onclick="goToSettings()">Налаштування</button>
+            </div>
+            
+            <div class="home-actions" style="margin-top:15px;">
+                <button class="btn btn-primary btn-home" onclick="goToNetworkSettings()">🌐 Мережа</button>
+            </div>
+
+            <div class="recent-camps">
+                <h3>Останні табори</h3>
+                <div id="quickHistory"></div>
+            </div>
+
+            <div class="footer-actions">
+                <button class="btn btn-success btn-small" onclick="backupAllData()">Бекап даних</button>
+                <button class="btn btn-secondary btn-small" onclick="restoreFromBackup()">Відновити</button>
+            </div>
+            <input type="file" id="restoreInput" accept=".json" style="display:none" onchange="handleRestoreFile(event)">
+        </div>
+    </div>
+</div>
+
+    <div id="historyPage" class="page">
+        <div class="container">
+            <header>
+                <h1>Історія таборів</h1>
+                <div>
+                    <button class="btn btn-secondary" onclick="goToHome()">Назад</button>
+                    <button class="btn btn-danger" onclick="closeApp()" style="margin-left:10px;">✖ Закрити</button>
+                </div>
+            </header>
+            <section>
+                <div id="fullHistory"></div>
+            </section>
+        </div>
+    </div>
+
+    <div id="settingsPage" class="page">
+        <div class="container">
+            <header>
+                <h1>Налаштування</h1>
+                <div>
+                    <button class="btn btn-secondary" onclick="goToHome()">Назад</button>
+                    <button class="btn btn-danger" onclick="closeApp()" style="margin-left:10px;">✖ Закрити</button>
+                </div>
+            </header>
+            <section>
+            <h3>Налаштування друку бейджиків</h3>
+            <div class="print-settings">
+                <div class="form-group">
+                    <label for="printMode">Режим друку:</label>
+                    <select id="printMode" onchange="toggleBatchSize();autoSaveSettings();">
+                        <option value="batch">Партіями</option>
+                        <option value="individual">Кожен окремо</option>
+                    </select>
+                </div>
+                <div class="form-group" id="batchSizeGroup">
+                    <label for="batchSize">Кількість у партії:</label>
+                    <input type="number" id="batchSize" min="1" max="10" value="3" onchange="autoSaveSettings()">
+                </div>
+            </div>
+            <h3>Налаштування груп</h3>
+            <div id="groupsConfig"></div>
+            <button class="btn btn-secondary" onclick="addGroup()">+ Додати групу</button>
+            <button class="btn btn-primary" onclick="saveGroupSettings()">Зберегти налаштування</button>
+        </section>
+    </div>
+</div>
+
+<div id="networkPage" class="page">
+    <div class="container">
+        <header>
+            <h1>Мережеві налаштування</h1>
+            <div>
+                <button class="btn btn-secondary" onclick="goToHome()">Назад</button>
+                <button class="btn btn-danger" onclick="closeApp()" style="margin-left:10px;">✖ Закрити</button>
+            </div>
+        </header>
+        <section>
+            <h3>Режим роботи</h3>
+            <div class="network-mode">
+                <label><input type="radio" name="networkMode" value="auto" onchange="changeNetworkMode()" checked> 🔄 Авто (автоматичне визначення)</label><br>
+                <label><input type="radio" name="networkMode" value="server" onchange="changeNetworkMode()"> 🖥️ Сервер (головний ноутбук з принтером)</label><br>
+                <label><input type="radio" name="networkMode" value="client" onchange="changeNetworkMode()"> 💻 Клієнт (допоміжний ноутбук)</label><br>
+                <label><input type="radio" name="networkMode" value="standalone" onchange="changeNetworkMode()"> 📴 Автономний (без мережі)</label>
+            </div>
+
+            <div id="autoSettings" style="display:none; margin-top:20px;">
+                <h3>Автоматичний режим</h3>
+                <p style="color:#666;">Програма автоматично шукає сервер в мережі. Якщо знайдено - працює як клієнт. Якщо ні - працює автономно.</p>
+                <button class="btn btn-primary" onclick="scanAndConnect()">🔍 Сканувати мережу</button>
+                <button class="btn btn-success" onclick="becomeServer()">Стати сервером</button>
+                <div id="autoStatus" style="margin-top:10px;padding:10px;border-radius:5px;"></div>
+            </div>
+
+            <div id="serverSettings" style="display:none; margin-top:20px;">
+                <h3>Налаштування сервера</h3>
+                <div class="form-group">
+                    <label>Порт сервера:</label>
+                    <input type="number" id="serverPort" value="33445" min="1024" max="65535">
+                </div>
+                <div class="form-group">
+                    <label>IP адреса цього комп'ютера:</label>
+                    <input type="text" id="serverIp" readonly style="background:#f0f0f0;">
+                </div>
+                <button class="btn btn-primary" onclick="startServerMode()">Запустити сервер</button>
+                <button class="btn btn-danger" onclick="stopServerMode()">Зупинити сервер</button>
+                <div id="serverStatus" style="margin-top:10px;padding:10px;border-radius:5px;"></div>
+            </div>
+
+            <div id="clientSettings" style="display:none; margin-top:20px;">
+                <h3>Налаштування клієнта</h3>
+                <div class="form-group">
+                    <label>IP адреса сервера:</label>
+                    <input type="text" id="clientServerIp" placeholder="192.168.1.100">
+                </div>
+                <div class="form-group">
+                    <label>Порт сервера:</label>
+                    <input type="number" id="clientServerPort" value="33445" min="1024" max="65535">
+                </div>
+                <button class="btn btn-primary" onclick="testServerConnection()">Перевірити з'єднання</button>
+                <button class="btn btn-success" onclick="saveClientMode()">Зберегти</button>
+                <div id="clientStatus" style="margin-top:10px;padding:10px;border-radius:5px;"></div>
+            </div>
+        </section>
+    </div>
+</div>
+
+<div id="registrationPage" class="page">
+    <div class="container">
+        <header>
+            <div class="header-content">
+                <h1>Реєстрація дітей</h1>
+                <div>
+                    <button class="btn btn-secondary" onclick="goToHome()">Головна</button>
+                    <button class="btn btn-danger" onclick="closeApp()" style="margin-left:10px;">✖ Закрити</button>
+                </div>
+            </div>
+        </header>
+
+        <section class="registration-section">
+            <h2>Реєстрація дитини</h2>
+            <form id="registrationForm" onsubmit="registerChild(event)">
+                <div class="form-row">
+                    <div class="form-group form-fullname">
+                        <label for="fullName">Прізвище та ім'я:</label>
+                        <input type="text" id="fullName" placeholder="Іванов Іван" required onkeypress="handleFullNameEnter(event)">
+                    </div>
+                    <div class="form-group">
+                        <label for="age">Вік:</label>
+                        <input type="number" id="age" min="1" max="18" required>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary btn-large">Зареєструвати</button>
+            </form>
+        </section>
+
+        <section class="table-section">
+            <div class="table-header">
+                <h2>Список зареєстрованих дітей</h2>
+                <div class="table-actions">
+                    <button class="btn btn-success" onclick="exportToExcel()">Excel</button>
+                    <button class="btn btn-success btn-small" onclick="backupAllData()">Бекап</button>
+                    <button class="btn btn-danger btn-small" onclick="deleteCurrentCamp()">Видалити табір</button>
+                </div>
+            </div>
+            <div class="backup-warning">Перед закриттям сторінки обов'язково зробіть бекап даних, щоб не втратити інформацію!</div>
+            <div class="table-info">
+                <p><strong>Місце:</strong> <span id="displayVillage">-</span></p>
+                <p><strong>Дата:</strong> <span id="displayDate">-</span></p>
+                <p><strong>Всього:</strong> <span id="totalChildren">0</span></p>
+                <div id="groupStatisticsInline"></div>
+            </div>
+            <div class="table-wrapper">
+                <table id="childrenTable">
+                    <thead>
+                        <tr><th>№</th><th>Прізвище</th><th>Ім'я</th><th>Вік</th><th>Група</th><th>Дії</th></tr>
+                    </thead>
+                    <tbody id="childrenTableBody"></tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+</div>
+
+<div id="badgeModal" class="modal">
+    <div class="modal-content">
+        <h3>Ім'я на бейджику</h3>
+        <p>Як написати ім'я на бейджику?</p>
+        <input type="text" id="badgeName" placeholder="Введіть ім'я або пропустіть">
+        <div class="modal-actions">
+            <button class="btn btn-secondary" onclick="skipBadgeName()">Пропустити</button>
+            <button class="btn btn-primary" onclick="confirmBadgeName()">Підтвердити</button>
+        </div>
+    </div>
+</div>
+
+<footer class="app-footer">
+    <p>Автор програми: <strong>Дячук Андрій Васильович</strong> &nbsp;|&nbsp; <a href="mailto:diachyk4560@gmail.com">diachyk4560@gmail.com</a></p>
+</footer>
+
+<div id="printArea" class="print-area"></div>
+
+<script src="tauri-api.js"></script>
+<script src="main.js"></script>
+</body>
+</html>
