@@ -3,6 +3,14 @@ let pendingBadges = [];
 let networkConfig = { mode: 'auto', serverUrl: '', serverPort: 33445 };
 let settings = {
     village: '', date: '', printMode: 'batch', batchSize: 3,
+    paperWidth: 70, paperHeight: 30,
+    textPositionX: 50, textPositionY: 50, // Позиція тексту у %
+    textSize: 24, // Розмір тексту
+    textFont: "'Brush Script MT', cursive", // Шрифт
+    textAlign: 'center', // Горизонтальне вирівнювання
+    textVerticalAlign: 'middle', // Вертикальне вирівнювання
+    isManualPosition: false, // Чи позиція встановлена вручну
+    badgeTemplate: 'simple',
     groups: [
         { minAge: 6, maxAge: 8, name: 'I', color: '#FF6B6B', textColor: '#FFFFFF' },
         { minAge: 9, maxAge: 11, name: 'II', color: '#4ECDC4', textColor: '#FFFFFF' },
@@ -10,6 +18,234 @@ let settings = {
         { minAge: 15, maxAge: 18, name: 'IV', color: '#95E1D3', textColor: '#000000' }
     ]
 };
+
+// ==================== НОВІ ФУНКЦІЇ НАВІГАЦІЇ ====================
+
+function toggleInstructions() {
+    const instructionsPage = document.getElementById('instructionsPage');
+    const floatingBtn = document.getElementById('floatingHelpBtn');
+    
+    if (instructionsPage.classList.contains('active')) {
+        // Закриваємо інструкцію
+        showPage('homePage');
+        floatingBtn.textContent = 'Інструкція';
+        floatingBtn.style.display = 'block';
+    } else {
+        // Відкриваємо інструкцію
+        showPage('instructionsPage');
+        floatingBtn.textContent = 'Назад';
+    }
+}
+
+function showInstructions() {
+    showPage('instructionsPage');
+    const floatingBtn = document.getElementById('floatingHelpBtn');
+    if (floatingBtn) {
+        floatingBtn.textContent = 'Назад';
+    }
+}
+
+function showSettingsTab(tabName) {
+    // Ховаємо всі вкладки
+    document.querySelectorAll('.settings-tab-content').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    document.querySelectorAll('.settings-tab').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    // Показуємо вибрану
+    if (tabName === 'print') {
+        document.getElementById('printSettingsTab').classList.add('active');
+        document.querySelector('.settings-tab:nth-child(1)').classList.add('active');
+        loadPrintSettings();
+        updateBadgePreview();
+        initBadgeEditor();
+    } else if (tabName === 'groups') {
+        document.getElementById('groupsSettingsTab').classList.add('active');
+        document.querySelector('.settings-tab:nth-child(2)').classList.add('active');
+        renderGroupsConfig();
+    } else if (tabName === 'network') {
+        document.getElementById('networkSettingsTab').classList.add('active');
+        document.querySelector('.settings-tab:nth-child(3)').classList.add('active');
+        loadNetworkPage();
+    }
+}
+
+function testPrintSettings() {
+    const testBadge = {
+        name: 'Тестове Ім\'я',
+        color: '#667eea',
+        textColor: '#FFFFFF'
+    };
+    printBadges([testBadge]);
+}
+
+// ==================== РЕДАКТОР БЕЙДЖИКА ====================
+
+function updateTextSize(size) {
+    const textElement = document.getElementById('badgeTextElement');
+    if (textElement) {
+        textElement.style.fontSize = size + 'px';
+        settings.textSize = parseInt(size);
+        document.getElementById('textSizeDisplay').textContent = size + 'px';
+        autoSaveSettings();
+    }
+}
+
+function updateFont(font) {
+    const textElement = document.getElementById('badgeTextElement');
+    if (textElement) {
+        textElement.style.fontFamily = font;
+        settings.textFont = font;
+        autoSaveSettings();
+    }
+}
+
+function alignText(position) {
+    const textElement = document.getElementById('badgeTextElement');
+    if (!textElement) return;
+    
+    // Скидаємо прапорець ручного позиціонування при використанні вирівнювання
+    settings.isManualPosition = false;
+    
+    // Спрощені позиції
+    if (position === 'center-middle') {
+        settings.textPositionX = 50;
+        settings.textPositionY = 50;
+        settings.textAlign = 'center';
+        settings.textVerticalAlign = 'middle';
+        updateAlignStatus('По центру');
+    } else if (position === 'left') {
+        settings.textPositionX = 15;
+        settings.textAlign = 'left';
+        updateAlignStatus('Зліва');
+    } else if (position === 'right') {
+        settings.textPositionX = 85;
+        settings.textAlign = 'right';
+        updateAlignStatus('Справа');
+    } else if (position === 'top') {
+        settings.textPositionY = 20;
+        settings.textVerticalAlign = 'top';
+        updateAlignStatus('Зверху');
+    } else if (position === 'bottom') {
+        settings.textPositionY = 80;
+        settings.textVerticalAlign = 'bottom';
+        updateAlignStatus('Знизу');
+    }
+    
+    textElement.style.left = settings.textPositionX + '%';
+    textElement.style.top = settings.textPositionY + '%';
+    
+    autoSaveSettings();
+}
+
+function updateAlignStatus(text) {
+    const statusElement = document.getElementById('alignStatus');
+    if (statusElement) {
+        if (settings.isManualPosition) {
+            statusElement.textContent = 'Вручну';
+            statusElement.style.color = '#667eea';
+        } else {
+            statusElement.textContent = text;
+            statusElement.style.color = '#999';
+        }
+    }
+}
+
+function updateBadgePreview() {
+    const width = parseInt(document.getElementById('paperWidth').value) || 70;
+    const height = parseInt(document.getElementById('paperHeight').value) || 30;
+    
+    const canvas = document.getElementById('badgePreview');
+    const ratio = 4; // 4 пікселі на 1 мм
+    canvas.style.width = (width * ratio) + 'px';
+    canvas.style.height = (height * ratio) + 'px';
+    
+    // Оновлюємо інформацію про розмір
+    document.getElementById('badgeSizeDisplay').textContent = `${width} × ${height} мм`;
+    
+    // Оновлюємо позицію тексту
+    const textElement = document.getElementById('badgeTextElement');
+    if (textElement) {
+        textElement.style.left = (settings.textPositionX || 50) + '%';
+        textElement.style.top = (settings.textPositionY || 50) + '%';
+        textElement.style.transform = 'translate(-50%, -50%)';
+        textElement.style.fontSize = (settings.textSize || 24) + 'px';
+        textElement.style.fontFamily = settings.textFont || "'Brush Script MT', cursive";
+        
+        // Оновлюємо контролі
+        if (document.getElementById('textSizeSlider')) {
+            document.getElementById('textSizeSlider').value = settings.textSize || 24;
+            document.getElementById('textSizeDisplay').textContent = (settings.textSize || 24) + 'px';
+        }
+        if (document.getElementById('fontSelect')) {
+            document.getElementById('fontSelect').value = settings.textFont || "'Brush Script MT', cursive";
+        }
+        
+        updateAlignStatus(settings.isManualPosition ? 'Вручну' : 'По центру');
+    }
+}
+
+function initBadgeEditor() {
+    const textElement = document.getElementById('badgeTextElement');
+    const canvas = document.getElementById('badgePreview');
+    
+    if (!textElement || !canvas) return;
+    
+    let isDragging = false;
+    let startX, startY, initialLeft, initialTop;
+    
+    textElement.addEventListener('mousedown', function(e) {
+        isDragging = true;
+        startX = e.clientX;
+        startY = e.clientY;
+        
+        const rect = canvas.getBoundingClientRect();
+        const textRect = textElement.getBoundingClientRect();
+        
+        initialLeft = ((textRect.left - rect.left + textRect.width / 2) / rect.width) * 100;
+        initialTop = ((textRect.top - rect.top + textRect.height / 2) / rect.height) * 100;
+        
+        textElement.style.cursor = 'grabbing';
+    });
+    
+    document.addEventListener('mousemove', function(e) {
+        if (!isDragging) return;
+        
+        const rect = canvas.getBoundingClientRect();
+        const deltaX = e.clientX - startX;
+        const deltaY = e.clientY - startY;
+        
+        const deltaXPercent = (deltaX / rect.width) * 100;
+        const deltaYPercent = (deltaY / rect.height) * 100;
+        
+        let newLeft = initialLeft + deltaXPercent;
+        let newTop = initialTop + deltaYPercent;
+        
+        // Обмежуємо позицію
+        newLeft = Math.max(10, Math.min(90, newLeft));
+        newTop = Math.max(10, Math.min(90, newTop));
+        
+        textElement.style.left = newLeft + '%';
+        textElement.style.top = newTop + '%';
+        
+        settings.textPositionX = newLeft;
+        settings.textPositionY = newTop;
+        
+        // Встановлюємо прапорець ручного позиціонування
+        settings.isManualPosition = true;
+        updateAlignStatus('Вручну');
+    });
+    
+    document.addEventListener('mouseup', function() {
+        if (isDragging) {
+            isDragging = false;
+            textElement.style.cursor = 'move';
+            autoSaveSettings();
+        }
+    });
+}
 
 function closeApp() {
     if (confirm('Закрити програму?')) {
@@ -59,7 +295,16 @@ function showPage(pageId) {
 }
 
 function goToHome() {
-    showPage('homePage'); loadQuickHistory(); document.getElementById('homeVillage').focus();
+    showPage('homePage');
+    loadQuickHistory();
+    document.getElementById('homeVillage').focus();
+    
+    // Повертаємо текст плаваючої кнопки
+    const floatingBtn = document.getElementById('floatingHelpBtn');
+    if (floatingBtn) {
+        floatingBtn.textContent = 'Інструкція';
+        floatingBtn.style.display = 'block';
+    }
 }
 
 async function loadCamp(village, date) {
@@ -79,8 +324,7 @@ function goToHistory() {
 
 function goToSettings() {
     showPage('settingsPage');
-    renderGroupsConfig();
-    loadPrintSettings();
+    showSettingsTab('print'); // Показуємо вкладку друку за замовчуванням
 }
 
 function goToNetworkSettings() {
@@ -121,7 +365,11 @@ async function loadNetworkPage() {
 function loadPrintSettings() {
     document.getElementById('printMode').value = settings.printMode || 'batch';
     document.getElementById('batchSize').value = settings.batchSize || 3;
+    document.getElementById('paperWidth').value = settings.paperWidth || 70;
+    document.getElementById('paperHeight').value = settings.paperHeight || 30;
+    document.getElementById('badgeTemplate').value = settings.badgeTemplate || 'simple';
     toggleBatchSize();
+    updateBadgePreview();
 }
 
 function toggleBatchSize() {
@@ -297,6 +545,20 @@ function autoSaveSettings() {
 async function saveGroupSettingsSilent() {
     settings.printMode = document.getElementById('printMode').value;
     settings.batchSize = parseInt(document.getElementById('batchSize').value) || 3;
+    
+    // Зберігаємо нові налаштування друку
+    if (document.getElementById('paperWidth')) {
+        settings.paperWidth = parseInt(document.getElementById('paperWidth').value) || 70;
+    }
+    if (document.getElementById('paperHeight')) {
+        settings.paperHeight = parseInt(document.getElementById('paperHeight').value) || 30;
+    }
+    if (document.getElementById('badgeTemplate')) {
+        settings.badgeTemplate = document.getElementById('badgeTemplate').value;
+    }
+    
+    // Позиція тексту зберігається автоматично в settings.textPositionX і settings.textPositionY
+    
     const els = document.querySelectorAll('.group-config');
     settings.groups = [];
     els.forEach((el, i) => {
@@ -544,9 +806,12 @@ function deleteCurrentCamp() {
 }
 
 async function deleteCamp(village, date) {
-    if (!confirm('УВАГА! Ви дійсно хочете видалити табір ' + village + ' за ' + date + '?')) return;
-    if (!confirm('Всі дані про дітей будуть безповоротно втрачені! Ви впевнені?')) return;
-    if (!confirm('Останнє попередження! Цю дію неможливо скасувати. Видалити табір?')) return;
+    const expected = 'ВИДАЛИТИ ' + village.toUpperCase();
+    if (!confirm('⚠️ ВИ ВПЕВНЕНІ? Це безповоротно видалить ВСІ дані табору "' + village + '" за ' + date + '!\n\nДіти, бейджі, історія — все буде втрачено назавжди.')) return;
+    const input = prompt('Для підтвердження видалення введіть "' + expected + '" (без лапок):\n\nЦе останній крок. Після нього дані неможливо відновити.', '');
+    if (input === null) return;
+    if (input.trim().toUpperCase() !== expected) { alert('❌ Невірний текст! Видалення скасовано.'); return; }
+    
     await window.api.deleteCamp(village, date);
     if (village === settings.village && date === settings.date) {
         settings.village = ''; settings.date = '';
@@ -555,7 +820,7 @@ async function deleteCamp(village, date) {
     }
     renderFullHistory();
     loadQuickHistory();
-    alert('Табір видалено!');
+    alert('✅ Табір видалено!');
 }
 
 // ===================== ДРУК =====================
@@ -575,11 +840,24 @@ function printBadges(badges) {
     const previewArea = document.createElement('div');
     previewArea.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:20px;margin-bottom:20px;';
     
+    // Отримуємо налаштування з редактора
+    const paperWidth = settings.paperWidth || 70;
+    const paperHeight = settings.paperHeight || 30;
+    const fontSize = settings.textSize || 24;
+    const fontFamily = settings.textFont || "'Brush Script MT', cursive";
+    const posX = settings.textPositionX || 50;
+    const posY = settings.textPositionY || 50;
+    
     badges.forEach(b => {
-        const fs = calcFontSize(b.name);
         const badgePreview = document.createElement('div');
-        badgePreview.style.cssText = `width:280px;height:120px;background:${b.color};color:${b.textColor};border:2px solid #333;border-radius:5px;display:flex;align-items:center;justify-content:center;font-family:'Segoe Script','Brush Script MT','Lucida Handwriting',cursive;font-size:${fs}px;font-weight:bold;padding:10px;box-sizing:border-box;word-wrap:break-word;text-align:center;overflow:hidden;`;
-        badgePreview.textContent = b.name;
+        const ratio = 4; // 4 пікселі на 1 мм для попереднього перегляду
+        badgePreview.style.cssText = `width:${paperWidth * ratio}px;height:${paperHeight * ratio}px;background:${b.color};color:${b.textColor};border:2px solid #333;border-radius:5px;position:relative;font-family:${fontFamily};font-size:${fontSize}px;font-weight:bold;box-sizing:border-box;overflow:hidden;`;
+        
+        const textElement = document.createElement('div');
+        textElement.style.cssText = `position:absolute;left:${posX}%;top:${posY}%;transform:translate(-50%, -50%);white-space:nowrap;`;
+        textElement.textContent = b.name;
+        
+        badgePreview.appendChild(textElement);
         previewArea.appendChild(badgePreview);
     });
     
@@ -587,7 +865,7 @@ function printBadges(badges) {
     btnContainer.style.cssText = 'display:flex;gap:15px;justify-content:center;';
     
     const printBtn = document.createElement('button');
-    printBtn.textContent = '🖨️ Друкувати';
+    printBtn.textContent = 'Друкувати';
     printBtn.className = 'btn btn-primary';
     printBtn.style.cssText = 'padding:12px 30px;font-size:16px;';
     printBtn.onclick = () => {
@@ -613,19 +891,66 @@ function printBadges(badges) {
 function actualPrint(badges) {
     const printArea = document.getElementById('printArea');
     printArea.innerHTML = '';
+    
+    // Отримуємо налаштування з редактора
+    const paperWidth = settings.paperWidth || 70;
+    const paperHeight = settings.paperHeight || 30;
+    const fontSize = settings.textSize || 24;
+    const fontFamily = settings.textFont || "'Brush Script MT', cursive";
+    const posX = settings.textPositionX || 50;
+    const posY = settings.textPositionY || 50;
+    
     badges.forEach(b => {
-        const fs = calcFontSize(b.name);
         const el = document.createElement('div');
-        el.className = 'badge'; el.style.backgroundColor = b.color;
-        el.innerHTML = `<div class="badge-content" style="color:${b.textColor};font-size:${fs}px;">${b.name}</div>`;
+        el.className = 'badge';
+        el.style.backgroundColor = b.color;
+        el.style.width = paperWidth + 'mm';
+        el.style.height = paperHeight + 'mm';
+        
+        const content = document.createElement('div');
+        content.className = 'badge-content';
+        content.style.color = b.textColor;
+        content.style.fontSize = fontSize + 'px';
+        content.style.fontFamily = fontFamily;
+        content.style.position = 'absolute';
+        content.style.left = posX + '%';
+        content.style.top = posY + '%';
+        content.style.transform = 'translate(-50%, -50%)';
+        content.textContent = b.name;
+        
+        el.style.position = 'relative';
+        el.appendChild(content);
         printArea.appendChild(el);
     });
+    
     setTimeout(() => {
-        const iframe = document.createElement('iframe'); iframe.style.display = 'none';
+        const iframe = document.createElement('iframe');
+        iframe.style.display = 'none';
         document.body.appendChild(iframe);
         const doc = iframe.contentWindow.document;
         doc.open();
-        doc.write(`<!DOCTYPE html><html><head><title>Друк</title><style>@page{margin:0;size:70mm 30mm;}*{margin:0;padding:0;}body{margin:0;padding:0;font-family:'Segoe Script','Brush Script MT','Lucida Handwriting',cursive;}.badge{width:70mm;height:30mm;border:2px solid #333;border-radius:5px;display:flex;align-items:center;justify-content:center;padding:5px;box-sizing:border-box;page-break-after:always;page-break-inside:avoid!important;overflow:hidden;}.badge:last-child{page-break-after:auto;}.badge-content{text-align:center;width:100%;font-weight:bold;word-wrap:break-word;overflow-wrap:break-word;letter-spacing:1px;line-height:1.2;max-width:100%;max-height:100%;display:flex;align-items:center;justify-content:center;}</style></head><body>${printArea.innerHTML}</body></html>`);
+        doc.write(`<!DOCTYPE html><html><head><title>Друк</title><style>
+            @page{margin:0;size:${paperWidth}mm ${paperHeight}mm;}
+            *{margin:0;padding:0;}
+            body{margin:0;padding:0;font-family:${fontFamily};}
+            .badge{
+                width:${paperWidth}mm;
+                height:${paperHeight}mm;
+                border:2px solid #333;
+                border-radius:5px;
+                position:relative;
+                box-sizing:border-box;
+                page-break-after:always;
+                page-break-inside:avoid!important;
+                overflow:hidden;
+            }
+            .badge:last-child{page-break-after:auto;}
+            .badge-content{
+                position:absolute;
+                font-weight:bold;
+                white-space:nowrap;
+            }
+        </style></head><body>${printArea.innerHTML}</body></html>`);
         doc.close();
         setTimeout(() => {
             try { 

@@ -3,11 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Реєстрація в табір</title>
+    <title>CampRegister - Реєстрація в табір</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
+<!-- Кнопка Інструкція (плаваюча) -->
+<button class="floating-help-btn" id="floatingHelpBtn" onclick="toggleInstructions()" title="Інструкція">
+    Інструкція
+</button>
+
+<!-- Головна сторінка -->
 <div id="homePage" class="page active">
     <div class="container centered">
         <div class="welcome-card">
@@ -29,10 +35,6 @@
                 <button class="btn btn-secondary btn-home" onclick="goToHistory()">Історія</button>
                 <button class="btn btn-secondary btn-home" onclick="goToSettings()">Налаштування</button>
             </div>
-            
-            <div class="home-actions" style="margin-top:15px;">
-                <button class="btn btn-primary btn-home" onclick="goToNetworkSettings()">🌐 Мережа</button>
-            </div>
 
             <div class="recent-camps">
                 <h3>Останні табори</h3>
@@ -43,131 +45,271 @@
                 <button class="btn btn-success btn-small" onclick="backupAllData()">Бекап даних</button>
                 <button class="btn btn-secondary btn-small" onclick="restoreFromBackup()">Відновити</button>
             </div>
-            <input type="file" id="restoreInput" accept=".json" style="display:none" onchange="handleRestoreFile(event)">
+        </div>
+        
+        <div class="app-info">
+            <p>Версія 1.0.1 | <a href="https://github.com/zeroprotocolx86/camp-register-software" target="_blank">GitHub</a></p>
         </div>
     </div>
 </div>
 
-    <div id="historyPage" class="page">
-        <div class="container">
-            <header>
-                <h1>Історія таборів</h1>
-                <div>
-                    <button class="btn btn-secondary" onclick="goToHome()">Назад</button>
-                    <button class="btn btn-danger" onclick="closeApp()" style="margin-left:10px;">✖ Закрити</button>
-                </div>
-            </header>
-            <section>
-                <div id="fullHistory"></div>
-            </section>
-        </div>
-    </div>
+<!-- Сторінка інструкції -->
+<div id="instructionsPage" class="page">
+    <div class="container">
+        <header>
+            <h1>Інструкція користувача</h1>
+            <button class="btn btn-secondary" onclick="goToHome()">Назад</button>
+        </header>
+        <section class="instructions-content">
+            <div class="instruction-section">
+                <h3>Швидкий старт</h3>
+                <ol>
+                    <li>Введіть <strong>місце</strong> та <strong>дату</strong> табору</li>
+                    <li>Натисніть <strong>"Почати реєстрацію"</strong></li>
+                    <li>Заповніть <strong>прізвище, ім'я</strong> та <strong>вік</strong></li>
+                    <li>Підтвердіть ім'я на бейджику</li>
+                    <li>Друкуйте бейджик</li>
+                </ol>
+            </div>
 
-    <div id="settingsPage" class="page">
-        <div class="container">
-            <header>
-                <h1>Налаштування</h1>
-                <div>
-                    <button class="btn btn-secondary" onclick="goToHome()">Назад</button>
-                    <button class="btn btn-danger" onclick="closeApp()" style="margin-left:10px;">✖ Закрити</button>
-                </div>
-            </header>
-            <section>
+            <div class="instruction-section">
+                <h3>Налаштування друку</h3>
+                <p>В <strong>Налаштування → Друк</strong>:</p>
+                <ul>
+                    <li>Вкажіть розмір паперу (70×30 мм за замовчуванням)</li>
+                    <li>Перетягніть текст на візуальному редакторі</li>
+                    <li>Змініть розмір тексту</li>
+                    <li>Змініть шаблон бейджика</li>
+                </ul>
+            </div>
+
+            <div class="instruction-section">
+                <h3>Налаштування груп</h3>
+                <p>В <strong>Налаштування → Групи</strong>:</p>
+                <ul>
+                    <li>Налаштуйте вікові межі</li>
+                    <li>Змініть кольори бейджиків</li>
+                    <li>Додайте або видаліть групи</li>
+                </ul>
+            </div>
+
+            <div class="instruction-section">
+                <h3>Мережева робота</h3>
+                <p>В <strong>Налаштування → Мережа</strong>:</p>
+                <ul>
+                    <li><strong>🔄 Авто</strong> - автоматичне визначення</li>
+                    <li><strong>🖥️ Сервер</strong> - головний комп'ютер</li>
+                    <li><strong>💻 Клієнт</strong> - допоміжний комп'ютер</li>
+                </ul>
+            </div>
+
+            <div class="instruction-section">
+                <h3>Підтримка</h3>
+                <p>Email: <a href="mailto:diachyk4560@gmail.com">diachyk4560@gmail.com</a></p>
+                <p>GitHub: <a href="https://github.com/zeroprotocolx86/camp-register-software" target="_blank">github.com/zeroprotocolx86/camp-register-software</a></p>
+            </div>
+        </section>
+    </div>
+</div>
+
+<!-- Сторінка історії -->
+<div id="historyPage" class="page">
+    <div class="container">
+        <header>
+            <h1>Історія таборів</h1>
+            <button class="btn btn-secondary" onclick="goToHome()">Назад</button>
+        </header>
+        <section>
+            <div id="fullHistory"></div>
+        </section>
+    </div>
+</div>
+
+<!-- Сторінка налаштувань -->
+<div id="settingsPage" class="page">
+    <div class="container">
+        <header>
+            <h1>Налаштування</h1>
+            <button class="btn btn-secondary" onclick="goToHome()">Назад</button>
+        </header>
+        
+        <div class="settings-tabs">
+            <button class="settings-tab active" onclick="showSettingsTab('print')">Друк</button>
+            <button class="settings-tab" onclick="showSettingsTab('groups')">Групи</button>
+            <button class="settings-tab" onclick="showSettingsTab('network')">Мережа</button>
+        </div>
+
+        <!-- Вкладка: Друк -->
+        <div id="printSettingsTab" class="settings-tab-content active">
             <h3>Налаштування друку бейджиків</h3>
-            <div class="print-settings">
-                <div class="form-group">
-                    <label for="printMode">Режим друку:</label>
-                    <select id="printMode" onchange="toggleBatchSize();autoSaveSettings();">
-                        <option value="batch">Партіями</option>
-                        <option value="individual">Кожен окремо</option>
-                    </select>
+            
+            <div class="print-settings-grid">
+                <div class="print-settings-form">
+                    <div class="settings-section">
+                        <h4>Режим друку</h4>
+                        <div class="form-group">
+                            <label for="printMode">Режим:</label>
+                            <select id="printMode" onchange="toggleBatchSize();autoSaveSettings();">
+                                <option value="batch">Партіями</option>
+                                <option value="individual">Кожен окремо</option>
+                            </select>
+                        </div>
+                        <div class="form-group" id="batchSizeGroup">
+                            <label for="batchSize">Кількість у партії:</label>
+                            <input type="number" id="batchSize" min="1" max="10" value="3" onchange="autoSaveSettings()">
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <h4>Розмір паперу</h4>
+                        <div class="form-group">
+                            <label for="paperWidth">Ширина (мм):</label>
+                            <input type="number" id="paperWidth" value="70" min="50" max="150" onchange="updateBadgePreview();autoSaveSettings()">
+                        </div>
+                        <div class="form-group">
+                            <label for="paperHeight">Висота (мм):</label>
+                            <input type="number" id="paperHeight" value="30" min="20" max="100" onchange="updateBadgePreview();autoSaveSettings()">
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <h4>Шаблон бейджика</h4>
+                        <div class="form-group">
+                            <label for="badgeTemplate">Шаблон:</label>
+                            <select id="badgeTemplate" onchange="updateBadgePreview();autoSaveSettings()">
+                                <option value="simple">Простий (тільки ім'я)</option>
+                                <option value="with-group">З назвою групи</option>
+                                <option value="with-age">З віком</option>
+                                <option value="full">Повний (ім'я + група + вік)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <button class="btn btn-primary" onclick="testPrintSettings()">Тестовий друк</button>
                 </div>
-                <div class="form-group" id="batchSizeGroup">
-                    <label for="batchSize">Кількість у партії:</label>
-                    <input type="number" id="batchSize" min="1" max="10" value="3" onchange="autoSaveSettings()">
+
+                <div class="badge-editor">
+                    <h4>Редактор бейджика</h4>
+                    <p class="editor-hint">Налаштуйте вигляд бейджика. Всі зміни застосовуються при друку.</p>
+                    
+                    <div class="editor-controls">
+                        <label>Розмір тексту:</label>
+                        <input type="range" id="textSizeSlider" min="12" max="72" value="24" oninput="updateTextSize(this.value)">
+                        <span id="textSizeDisplay">24px</span>
+                    </div>
+                    
+                    <div class="editor-controls">
+                        <label>Шрифт:</label>
+                        <select id="fontSelect" onchange="updateFont(this.value)">
+                            <option value="Arial, sans-serif">Arial</option>
+                            <option value="'Times New Roman', serif">Times New Roman</option>
+                            <option value="'Courier New', monospace">Courier New</option>
+                            <option value="Georgia, serif">Georgia</option>
+                            <option value="'Comic Sans MS', cursive">Comic Sans MS</option>
+                            <option value="'Trebuchet MS', sans-serif">Trebuchet MS</option>
+                            <option value="Verdana, sans-serif">Verdana</option>
+                            <option value="Impact, sans-serif">Impact</option>
+                            <option value="'Brush Script MT', cursive" selected>Brush Script (за замовчуванням)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="editor-controls">
+                        <label>Вирівнювання:</label>
+                        <div class="align-buttons">
+                            <button class="align-btn" onclick="alignText('center-middle')" title="По центру">⬛</button>
+                            <button class="align-btn" onclick="alignText('left')" title="Зліва">◀</button>
+                            <button class="align-btn" onclick="alignText('right')" title="Справа">▶</button>
+                            <button class="align-btn" onclick="alignText('top')" title="Зверху">▲</button>
+                            <button class="align-btn" onclick="alignText('bottom')" title="Знизу">▼</button>
+                        </div>
+                        <span id="alignStatus" style="margin-left: 10px; color: #999; font-size: 12px;">По центру</span>
+                    </div>
+                    
+                    <div id="badgePreview" class="badge-preview-canvas">
+                        <div id="badgeTextElement" class="badge-text-draggable">
+                            Тестове Ім'я
+                        </div>
+                    </div>
+                    <div class="badge-size-info">
+                        Розмір: <span id="badgeSizeDisplay">70 × 30 мм</span>
+                    </div>
                 </div>
             </div>
+        </div>
+
+        <!-- Вкладка: Групи -->
+        <div id="groupsSettingsTab" class="settings-tab-content">
             <h3>Налаштування груп</h3>
             <div id="groupsConfig"></div>
             <button class="btn btn-secondary" onclick="addGroup()">+ Додати групу</button>
-            <button class="btn btn-primary" onclick="saveGroupSettings()">Зберегти налаштування</button>
-        </section>
-    </div>
-</div>
+            <button class="btn btn-primary" onclick="saveGroupSettings()">Зберегти</button>
+        </div>
 
-<div id="networkPage" class="page">
-    <div class="container">
-        <header>
-            <h1>Мережеві налаштування</h1>
-            <div>
-                <button class="btn btn-secondary" onclick="goToHome()">Назад</button>
-                <button class="btn btn-danger" onclick="closeApp()" style="margin-left:10px;">✖ Закрити</button>
-            </div>
-        </header>
-        <section>
-            <h3>Режим роботи</h3>
+        <!-- Вкладка: Мережа -->
+        <div id="networkSettingsTab" class="settings-tab-content">
+            <h3>Мережеві налаштування</h3>
+            
             <div class="network-mode">
-                <label><input type="radio" name="networkMode" value="auto" onchange="changeNetworkMode()" checked> 🔄 Авто (автоматичне визначення)</label><br>
-                <label><input type="radio" name="networkMode" value="server" onchange="changeNetworkMode()"> 🖥️ Сервер (головний ноутбук з принтером)</label><br>
-                <label><input type="radio" name="networkMode" value="client" onchange="changeNetworkMode()"> 💻 Клієнт (допоміжний ноутбук)</label><br>
-                <label><input type="radio" name="networkMode" value="standalone" onchange="changeNetworkMode()"> 📴 Автономний (без мережі)</label>
+                <h4>Режим роботи</h4>
+                <label><input type="radio" name="networkMode" value="auto" onchange="changeNetworkMode()" checked> 🔄 Авто</label><br>
+                <label><input type="radio" name="networkMode" value="server" onchange="changeNetworkMode()"> 🖥️ Сервер</label><br>
+                <label><input type="radio" name="networkMode" value="client" onchange="changeNetworkMode()"> 💻 Клієнт</label><br>
+                <label><input type="radio" name="networkMode" value="standalone" onchange="changeNetworkMode()"> 📴 Автономний</label>
             </div>
 
             <div id="autoSettings" style="display:none; margin-top:20px;">
-                <h3>Автоматичний режим</h3>
-                <p style="color:#666;">Програма автоматично шукає сервер в мережі. Якщо знайдено - працює як клієнт. Якщо ні - працює автономно.</p>
-                <button class="btn btn-primary" onclick="scanAndConnect()">🔍 Сканувати мережу</button>
+                <h4>Автоматичний режим</h4>
+                <p style="color:#666;">Програма автоматично шукає сервер в мережі.</p>
+                <button class="btn btn-primary" onclick="scanAndConnect()">Сканувати</button>
                 <button class="btn btn-success" onclick="becomeServer()">Стати сервером</button>
-                <div id="autoStatus" style="margin-top:10px;padding:10px;border-radius:5px;"></div>
+                <div id="autoStatus" class="status-box"></div>
             </div>
 
             <div id="serverSettings" style="display:none; margin-top:20px;">
-                <h3>Налаштування сервера</h3>
+                <h4>Налаштування сервера</h4>
                 <div class="form-group">
-                    <label>Порт сервера:</label>
+                    <label>Порт:</label>
                     <input type="number" id="serverPort" value="33445" min="1024" max="65535">
                 </div>
                 <div class="form-group">
-                    <label>IP адреса цього комп'ютера:</label>
+                    <label>IP адреса:</label>
                     <input type="text" id="serverIp" readonly style="background:#f0f0f0;">
                 </div>
-                <button class="btn btn-primary" onclick="startServerMode()">Запустити сервер</button>
-                <button class="btn btn-danger" onclick="stopServerMode()">Зупинити сервер</button>
-                <div id="serverStatus" style="margin-top:10px;padding:10px;border-radius:5px;"></div>
+                <button class="btn btn-primary" onclick="startServerMode()">Запустити</button>
+                <button class="btn btn-danger" onclick="stopServerMode()">Зупинити</button>
+                <div id="serverStatus" class="status-box"></div>
             </div>
 
             <div id="clientSettings" style="display:none; margin-top:20px;">
-                <h3>Налаштування клієнта</h3>
+                <h4>Налаштування клієнта</h4>
                 <div class="form-group">
-                    <label>IP адреса сервера:</label>
+                    <label>IP сервера:</label>
                     <input type="text" id="clientServerIp" placeholder="192.168.1.100">
                 </div>
                 <div class="form-group">
-                    <label>Порт сервера:</label>
+                    <label>Порт:</label>
                     <input type="number" id="clientServerPort" value="33445" min="1024" max="65535">
                 </div>
-                <button class="btn btn-primary" onclick="testServerConnection()">Перевірити з'єднання</button>
+                <button class="btn btn-primary" onclick="testServerConnection()">Перевірити</button>
                 <button class="btn btn-success" onclick="saveClientMode()">Зберегти</button>
-                <div id="clientStatus" style="margin-top:10px;padding:10px;border-radius:5px;"></div>
+                <div id="clientStatus" class="status-box"></div>
             </div>
-        </section>
+        </div>
     </div>
 </div>
 
+<!-- Сторінка реєстрації -->
 <div id="registrationPage" class="page">
     <div class="container">
         <header>
             <div class="header-content">
                 <h1>Реєстрація дітей</h1>
-                <div>
-                    <button class="btn btn-secondary" onclick="goToHome()">Головна</button>
-                    <button class="btn btn-danger" onclick="closeApp()" style="margin-left:10px;">✖ Закрити</button>
-                </div>
+                <button class="btn btn-secondary" onclick="goToHome()">Назад</button>
             </div>
         </header>
 
         <section class="registration-section">
-            <h2>Реєстрація дитини</h2>
+            <h2>Додати дитину</h2>
             <form id="registrationForm" onsubmit="registerChild(event)">
                 <div class="form-row">
                     <div class="form-group form-fullname">
@@ -192,13 +334,14 @@
                     <button class="btn btn-danger btn-small" onclick="deleteCurrentCamp()">Видалити табір</button>
                 </div>
             </div>
-            <div class="backup-warning">Перед закриттям сторінки обов'язково зробіть бекап даних, щоб не втратити інформацію!</div>
+            
             <div class="table-info">
                 <p><strong>Місце:</strong> <span id="displayVillage">-</span></p>
                 <p><strong>Дата:</strong> <span id="displayDate">-</span></p>
                 <p><strong>Всього:</strong> <span id="totalChildren">0</span></p>
                 <div id="groupStatisticsInline"></div>
             </div>
+            
             <div class="table-wrapper">
                 <table id="childrenTable">
                     <thead>
@@ -211,20 +354,27 @@
     </div>
 </div>
 
+<!-- Модальне вікно -->
 <div id="badgeModal" class="modal">
     <div class="modal-content">
         <h3>Ім'я на бейджику</h3>
         <p>Як написати ім'я на бейджику?</p>
-        <input type="text" id="badgeName" placeholder="Введіть ім'я або пропустіть">
+        <input type="text" id="badgeName" placeholder="Введіть ім'я">
         <div class="modal-actions">
             <button class="btn btn-secondary" onclick="skipBadgeName()">Пропустити</button>
-            <button class="btn btn-primary" onclick="confirmBadgeName()">Підтвердити</button>
+            <button class="btn btn-primary" onclick="confirmBadgeName()">✓ Підтвердити</button>
         </div>
     </div>
 </div>
 
+<!-- Футер -->
 <footer class="app-footer">
-    <p>Автор програми: <strong>Дячук Андрій Васильович</strong> &nbsp;|&nbsp; <a href="mailto:diachyk4560@gmail.com">diachyk4560@gmail.com</a></p>
+    <p>
+        <strong>CampRegister v1.0.1</strong> | 
+        Автор: Дячук Андрій Васильович | 
+        <a href="mailto:diachyk4560@gmail.com">diachyk4560@gmail.com</a> | 
+        <a href="https://github.com/zeroprotocolx86/camp-register-software" target="_blank">GitHub</a>
+    </p>
 </footer>
 
 <div id="printArea" class="print-area"></div>

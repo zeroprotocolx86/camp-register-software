@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
 use std::time::{SystemTime, UNIX_EPOCH};
+use tauri_plugin_dialog::DialogExt;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 struct Child {
@@ -282,6 +283,154 @@ fn get_local_ip() -> Result<String, String> {
     }
 }
 
+#[tauri::command]
+fn export_excel(app_handle: tauri::AppHandle, data: serde_json::Value) -> Result<bool, String> {
+    let children = data.get("children").and_then(|c| c.as_array()).ok_or("Немає дітей для експорту")?;
+    if children.is_empty() { return Err("Немає дітей для експорту".into()); }
+
+    let village = data.get("village").and_then(|v| v.as_str()).unwrap_or("табір");
+    let date = data.get("date").and_then(|v| v.as_str()).unwrap_or("дата");
+    let filename = format!("Реєстрація_{}_{}.xlsx", village, date);
+
+    let path = app_handle.dialog().file()
+        .add_filter("Excel", &["xlsx"])
+        .set_file_name(&filename)
+        .blocking_save_file();
+
+    let Some(p) = path else { return Ok(false); };
+
+    use rust_xlsxwriter::*;
+    let mut workbook = Workbook::new();
+    let worksheet = workbook.add_worksheet();
+
+    let header = Format::new().set_bold().set_font_size(14).set_font_color(0x667eea);
+    let cell_format = Format::new().set_font_size(12);
+
+    worksheet.write_with_format(0, 0, "Прізвище", &header).unwrap();
+    worksheet.write_with_format(0, 1, "Ім'я", &header).unwrap();
+    worksheet.write_with_format(0, 2, "Вік", &header).unwrap();
+    worksheet.write_with_format(0, 3, "Група", &header).unwrap();
+
+    worksheet.set_column_width(0, 20).unwrap();
+    worksheet.set_column_width(1, 20).unwrap();
+    worksheet.set_column_width(2, 8).unwrap();
+    worksheet.set_column_width(3, 12).unwrap();
+
+    for (i, child) in children.iter().enumerate() {
+        let row = (i + 1) as u32;
+        let last = child.get("lastName").and_then(|v| v.as_str()).unwrap_or("");
+        let first = child.get("firstName").and_then(|v| v.as_str()).unwrap_or("");
+        let age = child.get("age").and_then(|v| v.as_u64()).unwrap_or(0);
+        let group = child.get("group").and_then(|v| v.as_str()).unwrap_or("");
+        worksheet.write_with_format(row, 0, last, &cell_format).unwrap();
+        worksheet.write_with_format(row, 1, first, &cell_format).unwrap();
+        worksheet.write_with_format(row, 2, age as f64, &cell_format).unwrap();
+        worksheet.write_with_format(row, 3, group, &cell_format).unwrap();
+    }
+
+    // Підрахунок
+    let total = children.len();
+    let mut group_counts: std::collections::HashMap<&str, usize> = std::collections::HashMap::new();
+    for child in children {
+        let g = child.get("group").and_then(|v| v.as_str()).unwrap_or("?");
+        *group_counts.entry(g).or_insert(0) += 1;
+    }
+
+    let summary_row = (children.len() + 2) as u32;
+    let bold = Format::new().set_bold().set_font_size(12).set_font_color(0x667eea);
+    let normal = Format::new().set_font_size(12);
+
+    let summary_text = format!("Загальна кількість дітей: {}", total);
+    worksheet.merge_range(summary_row, 0, summary_row, 3, &summary_text, &bold).unwrap();
+
+    let mut group_row = summary_row + 1;
+    let mut groups: Vec<_> = group_counts.into_iter().collect();
+    groups.sort_by(|a, b| a.0.cmp(b.0));
+    for (group, count) in &groups {
+        let gtxt = format!("Група {}: {} дітей", group, count);
+        worksheet.merge_range(group_row, 0, group_row, 3, &gtxt, &normal).unwrap();
+        group_row += 1;
+    }
+
+    workbook.save(p.as_path().unwrap()).map_err(|e| e.to_string())?;
+    Ok(true)
+}
+
+#[tauri::command]
+fn backup_data(app_handle: tauri::AppHandle) -> Result<bool, String> {
+    let data_dir = app_handle.path().app_data_dir().unwrap().join("camp_register_data");
+    let data_path = data_dir.join("camp_data.json");
+
+    if !data_path.exists() { return Err("Немає даних для бекапу".into()); }
+
+    let content = fs::read_to_string(&data_path).map_err(|e| e.to_string())?;
+
+    let path = app_handle.dialog().file()
+        .add_filter("JSON", &["json"])
+        .set_file_name("camp_backup.json")
+        .blocking_save_file();
+
+    match path {
+        Some(p) => {
+            fs::write(p.as_path().unwrap(), content).map_err(|e| e.to_string())?;
+            Ok(true)
+        }
+        None => Ok(false),
+    }
+}
+
+#[tauri::command]
+fn restore_data(app_handle: tauri::AppHandle) -> Result<i64, String> {
+    let path = app_handle.dialog().file()
+        .add_filter("JSON", &["json"])
+        .blocking_pick_file();
+
+    match path {
+        Some(p) => {
+            let content = fs::read_to_string(p.as_path().unwrap()).map_err(|e| e.to_string())?;
+            let backup_data: serde_json::Value = serde_json::from_str(&content).map_err(|e| e.to_string())?;
+
+            let data_dir = app_handle.path().app_data_dir().unwrap().join("camp_register_data");
+            if !data_dir.exists() { fs::create_dir_all(&data_dir).map_err(|e| e.to_string())?; }
+            let data_path = data_dir.join("camp_data.json");
+
+            let mut current_data: serde_json::Value = if data_path.exists() {
+                let cur = fs::read_to_string(&data_path).map_err(|e| e.to_string())?;
+                serde_json::from_str(&cur).unwrap_or(serde_json::json!({}))
+            } else {
+                serde_json::json!({})
+            };
+
+            let mut restored_count: i64 = 0;
+
+            if let Some(backup_obj) = backup_data.as_object() {
+                for (key, camp) in backup_obj {
+                    if let Some(children) = camp.get("children").and_then(|c| c.as_array()) {
+                        if !children.is_empty() {
+                            restored_count += children.len() as i64;
+                            if current_data.get(key).is_none() {
+                                current_data[key] = camp.clone();
+                            } else {
+                                if let Some(existing) = current_data[key].get_mut("children").and_then(|c| c.as_array_mut()) {
+                                    for child in children {
+                                        existing.push(child.clone());
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            let json = serde_json::to_string_pretty(&current_data).map_err(|e| e.to_string())?;
+            fs::write(data_path, json).map_err(|e| e.to_string())?;
+
+            Ok(restored_count)
+        }
+        None => Ok(0),
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -298,7 +447,10 @@ pub fn run() {
             delete_camp,
             get_network_config,
             save_network_config,
-            get_local_ip
+            get_local_ip,
+            export_excel,
+            backup_data,
+            restore_data
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -15,48 +15,10 @@ window.api = {
     saveNetworkConfig: (config) => invoke('save_network_config', { config }),
     getLocalIp: () => invoke('get_local_ip'),
     
-    // Backup/Export - використаємо Tauri dialog
-    backupData: async () => {
-        const { save } = window.__TAURI__.dialog;
-        const { writeTextFile } = window.__TAURI__.fs;
-        
-        const filePath = await save({
-            defaultPath: `backup_camp_${new Date().toISOString().split('T')[0]}.json`,
-            filters: [{ name: 'JSON', extensions: ['json'] }]
-        });
-        
-        if (!filePath) return false;
-        
-        const allData = {};
-        const settings = await invoke('get_settings');
-        const backup = { version: 1, created: new Date().toISOString(), data: allData, settings };
-        
-        await writeTextFile(filePath, JSON.stringify(backup, null, 2));
-        return true;
-    },
-    
-    restoreData: async () => {
-        const { open } = window.__TAURI__.dialog;
-        const { readTextFile } = window.__TAURI__.fs;
-        
-        const filePath = await open({
-            filters: [{ name: 'JSON', extensions: ['json'] }],
-            multiple: false
-        });
-        
-        if (!filePath) return 0;
-        
-        const content = await readTextFile(filePath);
-        const backup = JSON.parse(content);
-
-        return 0;
-    },
-    
-    exportExcel: async (data) => {
-        // Excel експорт поки що відключений - потрібен окремий Rust модуль
-        alert('Excel експорт в розробці для Tauri версії');
-        return false;
-    },
+    // Backup/Export - викликаємо Rust команди
+    backupData: () => invoke('backup_data'),
+    restoreData: () => invoke('restore_data'),
+    exportExcel: (data) => invoke('export_excel', { data }),
     
     closeApp: async () => {
         const { exit } = window.__TAURI__.process;
