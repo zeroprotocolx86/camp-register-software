@@ -1,6 +1,39 @@
 # Changelog
 
-## Version 1.1.0 - 2026-06-08
+## Version 1.2.0 - 2026-06-08
+
+### 🎨 UI Improvements
+- **Redesigned README** - modern, beautiful main page with badges and tables
+- **Better documentation structure** - clearer navigation and information
+- **Updated screenshots** - new interface screenshots showing all features
+
+### 🛡️ Security & Data Protection
+- **Camp deletion protection** - confirmation dialog before deleting camps
+- **Backup/Restore system** - full data backup and restore via Rust backend
+- **Excel export** - automatic .xlsx export through Rust backend
+
+### 🔧 Technical Improvements
+- **Fixed tauri-api.js** - resolved API integration issues
+- **Backend optimization** - improved Rust command performance
+- **Better error handling** - more robust data operations
+
+### 🧹 Cleanup
+- **Removed unnecessary files** - deleted FINAL_REPORT.md, GIT_COMMANDS.md, RELEASE_CHECKLIST.md, README_GITHUB.md, GITHUB_SETUP.md
+- **Code cleanup** - removed unused code references
+- **Simplified project structure** - easier to navigate
+
+### 📦 Release Updates
+- **New builds** - fresh executable files for both installer and portable versions
+- **Updated version numbers** - consistent versioning across all config files
+
+### 📝 Documentation
+- **Enhanced README.md** - beautiful layout with emojis, badges, and tables
+- **Better quick start guide** - clearer instructions for new users
+- **Improved feature descriptions** - more detailed explanations
+
+---
+
+## Version 1.1.0 - 2026-06-05
 
 ### 🎨 UI Improvements
 - **Redesigned README** - modern, beautiful main page with badges and tables

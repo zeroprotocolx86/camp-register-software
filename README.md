@@ -6,7 +6,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-Windows-0078D4?logo=windows&logoColor=white)](https://www.microsoft.com/windows)
-[![Version](https://img.shields.io/badge/Version-1.1.0-success.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-1.2.0-success.svg)](CHANGELOG.md)
 [![Made with Tauri](https://img.shields.io/badge/Made%20with-Tauri-FFC131?logo=tauri&logoColor=white)](https://tauri.app/)
 
 ---
@@ -151,7 +151,7 @@
 ![Налаштування груп](docs/screenshots/Налаштування%20груп.png)
 
 ### Налаштування друку бейджиків
-![Налаштування друку бейджиків](docs/screenshots/Налаштування%20друку%20бейджиків.png)
+![Налаштування друку бейджиків](docs/screenshots/Налаштування%20друку%20бейжиків.png)
 
 ### Налаштування мережі
 ![Налаштування мережі](docs/screenshots/Налаштування%20мережі.png)
